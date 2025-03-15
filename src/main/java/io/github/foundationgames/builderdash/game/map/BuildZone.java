@@ -59,6 +59,10 @@ public record BuildZone(BlockBounds templateArea, BlockBounds playerSafeArea, Bl
             world.setBlockState(destPos, world.getBlockState(srcPos), 3, 0);
         }
 
+        for (var player : world.getPlayers()) {
+            player.networkHandler.chunkDataSender.sendChunkBatches(player);
+        }
+
         return new BuildZone(
                 templateArea().offset(offset),
                 playerSafeArea().offset(offset),

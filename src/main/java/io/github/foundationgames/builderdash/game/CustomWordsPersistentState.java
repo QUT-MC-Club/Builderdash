@@ -109,7 +109,7 @@ public class CustomWordsPersistentState extends PersistentState {
     public static LiteralArgumentBuilder<ServerCommandSource> createCommand(LiteralArgumentBuilder<ServerCommandSource> command, String game) {
         var gameName = Text.translatable("name." + Builderdash.ID + "." + game);
         var key = getKeyForGame(game);
-        var perm = BDUtil.permission(game, BDUtil.PERM_GAME_EDIT, 3);
+        var perm = BDUtil.permission(game, BDUtil.PERM_GAME_EDIT, 2);
 
         return command
                 .then(CommandManager.literal("setwords").requires(perm)

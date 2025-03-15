@@ -10,16 +10,20 @@ import io.github.foundationgames.builderdash.game.player.PlayerRole;
 import io.github.foundationgames.builderdash.game.sound.SFX;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.boss.BossBar;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.item.EnderPearlItem;
+import net.minecraft.item.consume.TeleportRandomlyConsumeEffect;
 import net.minecraft.network.message.MessageType;
 import net.minecraft.network.message.SignedMessage;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -47,10 +51,12 @@ import xyz.nucleoid.stimuli.event.block.FlowerPotModifyEvent;
 import xyz.nucleoid.stimuli.event.block.FluidPlaceEvent;
 import xyz.nucleoid.stimuli.event.entity.EntitySpawnEvent;
 import xyz.nucleoid.stimuli.event.entity.EntityUseEvent;
+import xyz.nucleoid.stimuli.event.item.ItemUseEvent;
 import xyz.nucleoid.stimuli.event.player.PlayerAttackEntityEvent;
 import xyz.nucleoid.stimuli.event.player.PlayerDamageEvent;
 import xyz.nucleoid.stimuli.event.player.PlayerDeathEvent;
 import xyz.nucleoid.stimuli.event.player.ReplacePlayerChatEvent;
+import xyz.nucleoid.stimuli.event.world.EndPortalOpenEvent;
 import xyz.nucleoid.stimuli.event.world.ExplosionDetonatedEvent;
 
 import java.util.ArrayList;
@@ -135,6 +141,7 @@ public class BDGameActivity<C extends BDGameConfig> {
         game.setRule(GameRuleType.UNSTABLE_TNT, EventResult.DENY);
         game.setRule(GameRuleType.FIRE_TICK, EventResult.DENY);
         game.listen(ExplosionDetonatedEvent.EVENT, (explosion, blocksToDestroy) -> EventResult.DENY);
+        game.listen(EndPortalOpenEvent.EVENT, (it, res) -> EventResult.DENY);
 
         game.listen(GameActivityEvents.ENABLE, this::onOpen);
         game.listen(GameActivityEvents.DISABLE, this::onClose);
@@ -181,6 +188,21 @@ public class BDGameActivity<C extends BDGameConfig> {
                 mob.setAiDisabled(true);
             }
             return EventResult.PASS;
+        });
+        game.listen(ItemUseEvent.EVENT, (player, hand) -> {
+            var stack = player.getStackInHand(hand);
+            if (stack.contains(DataComponentTypes.CONSUMABLE)) {
+                var cons = stack.get(DataComponentTypes.CONSUMABLE);
+                if (cons != null) for (var e : cons.onConsumeEffects()) if (e instanceof TeleportRandomlyConsumeEffect) {
+                    return ActionResult.FAIL;
+                }
+            }
+
+            if (stack.getItem() instanceof EnderPearlItem) {
+                return ActionResult.FAIL;
+            }
+
+            return ActionResult.PASS;
         });
 
         game.listen(ReplacePlayerChatEvent.EVENT, this::consumeChatMessage);
