@@ -147,7 +147,7 @@ public class BDPictionaryActivity extends BDGameActivity<BDPictionaryConfig> {
                 checkBuilderOnline();
 
                 this.notYetGuessed.removeIf(r -> !r.isOnline(this.world));
-                if (this.notYetGuessed.size() == 0) {
+                if (this.notYetGuessed.isEmpty()) {
                     currPlayerRevealWord();
                 }
 
@@ -199,7 +199,7 @@ public class BDPictionaryActivity extends BDGameActivity<BDPictionaryConfig> {
         this.timeToPhaseChange = newTime;
 
         if (this.timeOfFirstGuess >= 0) {
-            this.timeOfFirstGuess *= scaleFactor;
+            this.timeOfFirstGuess = (int) (this.timeOfFirstGuess * scaleFactor);
         }
     }
 
@@ -290,7 +290,7 @@ public class BDPictionaryActivity extends BDGameActivity<BDPictionaryConfig> {
     public void nextPlayerChooseWordOrEndGame() {
         this.updateScoreboard();
 
-        if (this.upcomingBuilders.size() == 0) {
+        if (this.upcomingBuilders.isEmpty()) {
             displayWin();
             return;
         }
@@ -303,7 +303,7 @@ public class BDPictionaryActivity extends BDGameActivity<BDPictionaryConfig> {
         this.hintText = null;
 
         while (this.currentBuilder == null || !this.currentBuilder.isOnline(this.world)) {
-            if (this.upcomingBuilders.size() == 0) {
+            if (this.upcomingBuilders.isEmpty()) {
                 displayWin();
                 return;
             }

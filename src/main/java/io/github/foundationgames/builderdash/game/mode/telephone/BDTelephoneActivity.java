@@ -125,7 +125,7 @@ public class BDTelephoneActivity extends BDGameActivity<BDTelephoneConfig> {
 
         // i = series index, aka "column" of successive builds and guesses
         for (int i = 0; i < playerCount; i++) {
-            initialPrompts[i] = new InitialPrompt(i, indexedPlayers.get(playersEachRound.get(0).getInt(i)));
+            initialPrompts[i] = new InitialPrompt(i, indexedPlayers.get(playersEachRound.getFirst().getInt(i)));
         }
 
         // b represents the build number, not the round number
@@ -655,7 +655,7 @@ public class BDTelephoneActivity extends BDGameActivity<BDTelephoneConfig> {
         var data = this.participants.get(ref);
         if (data != null && data.currentRole instanceof TelephoneGalleryControlRole) {
             var players = new ArrayDeque<>(this.participants.values());
-            if (players.size() == 0) {
+            if (players.isEmpty()) {
                 endGame();
                 return;
             }

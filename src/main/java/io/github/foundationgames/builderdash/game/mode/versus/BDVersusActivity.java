@@ -212,7 +212,7 @@ public class BDVersusActivity extends BDGameActivity<BDVersusConfig> {
             pair.builders[subRound].ifOnline(this.gameSpace, this::spawnParticipant);
         }
 
-        var roundText = subRound == 0 ? Text.translatable(ROUND_NO, this.currentRound, this.maxRounds).formatted(Formatting.GOLD) : Text.empty();
+        var roundText = subRound == 0 ? Text.translatable(ROUND_NO, this.currentRound / 2 + 1, this.maxRounds / 2).formatted(Formatting.GOLD) : Text.empty();
         var promptText = Text.translatable(PROMPT_NO, subRound + 1, 2).formatted(Formatting.LIGHT_PURPLE);
 
         this.gameSpace.getPlayers().showTitle(
@@ -517,7 +517,7 @@ public class BDVersusActivity extends BDGameActivity<BDVersusConfig> {
     public void updateScoreboard() {
         this.scoreboard.clearLines();
 
-        this.scoreboard.addLines(Text.translatable(ROUND_NO, this.currentRound, this.maxRounds).formatted(Formatting.BLUE));
+        this.scoreboard.addLines(Text.translatable(ROUND_NO, this.currentRound / 2 + 1, this.maxRounds / 2).formatted(Formatting.BLUE));
         this.scoreboard.addLines(Text.empty());
 
         switch (this.phase) {
