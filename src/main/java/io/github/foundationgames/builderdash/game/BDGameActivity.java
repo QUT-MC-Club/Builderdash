@@ -1,6 +1,7 @@
 package io.github.foundationgames.builderdash.game;
 
 import eu.pb4.polymer.virtualentity.api.attachment.ChunkAttachment;
+import io.github.foundationgames.builderdash.config.ServerConfigAccess;
 import io.github.foundationgames.builderdash.game.element.TickingAnimation;
 import io.github.foundationgames.builderdash.game.element.display.GenericContent;
 import io.github.foundationgames.builderdash.game.map.BuildZone;
@@ -16,15 +17,20 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.EnderPearlItem;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.consume.TeleportRandomlyConsumeEffect;
 import net.minecraft.network.message.MessageType;
 import net.minecraft.network.message.SignedMessage;
+import net.minecraft.network.packet.c2s.play.CreativeInventoryActionC2SPacket;
+import net.minecraft.registry.Registries;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
@@ -53,6 +59,7 @@ import xyz.nucleoid.stimuli.event.entity.EntitySpawnEvent;
 import xyz.nucleoid.stimuli.event.entity.EntityUseEvent;
 import xyz.nucleoid.stimuli.event.item.ItemUseEvent;
 import xyz.nucleoid.stimuli.event.player.PlayerAttackEntityEvent;
+import xyz.nucleoid.stimuli.event.player.PlayerC2SPacketEvent;
 import xyz.nucleoid.stimuli.event.player.PlayerDamageEvent;
 import xyz.nucleoid.stimuli.event.player.PlayerDeathEvent;
 import xyz.nucleoid.stimuli.event.player.ReplacePlayerChatEvent;
@@ -62,8 +69,10 @@ import xyz.nucleoid.stimuli.event.world.ExplosionDetonatedEvent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -87,6 +96,7 @@ public class BDGameActivity<C extends BDGameConfig> {
     public static final Text TYPE_DONE_1 = Text.translatable("label.builderdash.type_done_1").formatted(Formatting.LIGHT_PURPLE);
     public static final Text TYPE_DONE_2 = Text.translatable("label.builderdash.type_done_2").formatted(Formatting.LIGHT_PURPLE);
     public static final Text BUILD_PROMPT = Text.translatable("title.builderdash.build_prompt").formatted(Formatting.GREEN);
+    public static final Text ITEM_NOT_ALLOWED = Text.translatable("message.builderdash.item_not_allowed").formatted(Formatting.RED, Formatting.BOLD);
 
     public static final int SEC = 20;
 
@@ -101,6 +111,11 @@ public class BDGameActivity<C extends BDGameConfig> {
     public final GlobalWidgets widgets;
     protected final SidebarWidget scoreboard;
     public final Set<TickingAnimation> animations = new HashSet<>();
+    public final BDGameMusic.Playlist musicPlaylist;
+    public final Set<String> namespaceBlacklist = new HashSet<>();
+    public final Set<Identifier> itemBlacklist;
+
+    protected long nextMusicTrackTime = -1;
 
     protected BuildZone respawn;
     protected int timeToPhaseChange = 1;
@@ -111,11 +126,15 @@ public class BDGameActivity<C extends BDGameConfig> {
 
     private int lastCountdownTime = Integer.MAX_VALUE;
 
+    private final Map<PlayerRef, Set<Item>> pendingInventoryClears = new HashMap<>();
+
     protected BDGameActivity(GameSpace space, GameActivity game, ServerWorld world, BuilderdashMap map, C config) {
         Set<PlayerRef> participants = space.getPlayers().participants().stream()
                 .map(PlayerRef::of)
                 .collect(Collectors.toSet());
         GlobalWidgets widgets = GlobalWidgets.addTo(game);
+
+        var serverConfig = ServerConfigAccess.forServer(world.getServer());
 
         this.gameSpace = space;
         this.config = config;
@@ -124,6 +143,11 @@ public class BDGameActivity<C extends BDGameConfig> {
         this.participants = new Object2ObjectOpenHashMap<>();
         this.world = world;
         this.widgets = widgets;
+        this.musicPlaylist = BDGameMusic.Playlist.ofShuffled(BDGameMusic.ofStrings(
+                serverConfig.getServerConfig().music.get()
+        ));
+        this.namespaceBlacklist.addAll(serverConfig.getServerConfig().namespaceBlacklist.get());
+        this.itemBlacklist = serverConfig.getServerConfig().itemBlacklist.get().stream().map(Identifier::tryParse).collect(Collectors.toSet());
 
         this.respawn = map.singleZone;
 
@@ -203,6 +227,20 @@ public class BDGameActivity<C extends BDGameConfig> {
             }
 
             return ActionResult.PASS;
+        });
+
+        game.listen(PlayerC2SPacketEvent.EVENT, (player, packet) -> {
+            if (packet instanceof CreativeInventoryActionC2SPacket(short slot, ItemStack stack)) {
+                var id = Registries.ITEM.getId(stack.getItem());
+                if (this.namespaceBlacklist.contains(id.getNamespace()) || this.itemBlacklist.contains(id)) {
+                    this.pendingInventoryClears.computeIfAbsent(PlayerRef.of(player), r -> new HashSet<>())
+                            .add(stack.getItem());
+
+                    player.sendMessage(ITEM_NOT_ALLOWED);
+                }
+            }
+
+            return EventResult.PASS;
         });
 
         game.listen(ReplacePlayerChatEvent.EVENT, this::consumeChatMessage);
@@ -297,6 +335,18 @@ public class BDGameActivity<C extends BDGameConfig> {
         return String.format("%02d:%02d", minutes, seconds);
     }
 
+    protected void updateMusicState() {
+        var track = this.musicPlaylist.pop();
+
+        if (track == null) {
+            this.nextMusicTrackTime = 0;
+            return;
+        }
+
+        this.nextMusicTrackTime = System.currentTimeMillis() + (track.durationSec() * 1000L);
+        this.gameSpace.getPlayers().participants().forEach(track::play);
+    }
+
     protected void tick() {
         this.participants.values().forEach(BDPlayer::tick);
 
@@ -317,6 +367,25 @@ public class BDGameActivity<C extends BDGameConfig> {
             }
         }
         this.animations.removeAll(remove);
+
+        if (this.nextMusicTrackTime != 0 && System.currentTimeMillis() >= this.nextMusicTrackTime) {
+            updateMusicState();
+        }
+
+        for (var player : this.pendingInventoryClears.keySet()) {
+            var items = this.pendingInventoryClears.get(player);
+            var sPlayer = player.getEntity(this.world);
+
+            if (sPlayer != null) {
+                for (var item : items) {
+                    sPlayer.getInventory().remove(s -> s.getItem() == item, -1, sPlayer.playerScreenHandler.getCraftingInput());
+                }
+
+                sPlayer.currentScreenHandler.sendContentUpdates();
+                sPlayer.playerScreenHandler.onContentChanged(sPlayer.getInventory());
+                sPlayer.getInventory().markDirty();
+            }
+        }
     }
 
     protected void sec(int timeToPhaseChangeSec) {

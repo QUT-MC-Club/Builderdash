@@ -1,6 +1,8 @@
 package io.github.foundationgames.builderdash;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import io.github.foundationgames.builderdash.config.PlayerConfigInfo;
+import io.github.foundationgames.builderdash.config.ServerConfigInfo;
 import io.github.foundationgames.builderdash.game.BDCustomWordsConfig;
 import io.github.foundationgames.builderdash.game.CustomWordsPersistentState;
 import io.github.foundationgames.builderdash.game.lobby.BDLobbyActivity;
@@ -12,6 +14,7 @@ import io.github.foundationgames.builderdash.game.mode.versus.BDVersusConfig;
 import io.github.foundationgames.builderdash.game.mode.versus.VersusCommand;
 import io.github.foundationgames.builderdash.tools.BDToolsItems;
 import io.github.foundationgames.builderdash.tools.BDToolsState;
+import me.lucko.fabric.api.permissions.v0.Permissions;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -101,7 +104,14 @@ public class Builderdash implements ModInitializer {
                     var player = ctx.getSource().getPlayer();
                     BDToolsState.get(player).openToolbox(player);
                     return 0;
-                }));
+                }))
+                .then(CommandManager.literal("config")
+                        .then(ServerConfigInfo.COMMAND.command(CommandManager.literal("server")
+                                        .requires(src -> Permissions.check(src, BDUtil.PERM_GLOBAL_CONFIG, 4)),
+                                ServerCommandSource::sendMessage))
+                        .then(PlayerConfigInfo.COMMAND.command(CommandManager.literal("player"),
+                                ServerCommandSource::sendMessage))
+                );
     }
 
     public static Identifier id(String path) {

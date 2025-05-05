@@ -1,4 +1,13 @@
 {
+  "builderdash.config.query_value": "Option '%s' is currently '%s'. (Click to copy)",
+  "builderdash.config.set_value": "Option '%s' has been set to '%s'.",
+
+  "builderdash.config.builderdash_server.namespace_blacklist.desc": "Comma-separated list of item ID namespaces. Items and blocks under these namespaces will not be allowed during rounds of Builderdash.",
+  "builderdash.config.builderdash_server.item_blacklist.desc": "Comma-separated list of item IDs. The specified items in this list will not be allowed during rounds of Builderdash.",
+  "builderdash.config.builderdash_server.music.desc": "Comma-separated list of music to play during Builderdash games. Each music track is specified in the following format: '75$mypack:music.my_music_sound_event' - where (75) is the duration in seconds, and (mypack:music.my_music_sound_event) is the sound event ID of that music track.",
+
+  "builderdash.config.builderdash_player.music_volume.desc": "Volume at which custom music in Builderdash games is played for you, in percent. Setting to 0 turns off custom music. Will not affect currently playing music; press F3+T to stop any currently playing music.",
+
   "label.builderdash.lobby.not_enough_players": "Not enough players!",
   "label.builderdash.lobby.players_ready": "%s/%s players ready",
   "label.builderdash.lobby.not_enough_ready.1": "Game will start when",
@@ -75,6 +84,7 @@
   "label.builderdash.type_done_2": "you finish building early.",
   "message.builderdash.submitted": "You're finished building! Type \"not done\" in chat if you need to keep working.",
   "message.builderdash.unsubmitted": "You're not finished building! You have until the time limit to work on your build.",
+  "message.builderdash.item_not_allowed": "That item is not allowed here!",
   "title.builderdash.won_the_game": "won the game!",
   "title.builderdash.build_prompt": "Build your prompt!",
   "item.builderdash.tool_undo": "Undo",

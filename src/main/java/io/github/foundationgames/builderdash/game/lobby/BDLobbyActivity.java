@@ -186,6 +186,10 @@ public class BDLobbyActivity<C extends BDGameConfig> {
                 this.requestStart();
             }
         }
+
+        for (var player : this.players.values()) {
+            player.tick();
+        }
     }
 
     private void updateInfo() {

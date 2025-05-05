@@ -39,6 +39,7 @@ public enum BDUtil {;
     public static final String PERM_GAME_EDIT = "edit";
 
     public static final String PERM_GLOBAL_TOOLBOX = Builderdash.ID + ".toolbox";
+    public static final String PERM_GLOBAL_CONFIG = Builderdash.ID + ".config";
 
     public static TemplateRegion regionOrThrow(Identifier mapId, MapTemplate template, String marker) throws GameOpenException {
         var region = template.getMetadata().getFirstRegion(marker);

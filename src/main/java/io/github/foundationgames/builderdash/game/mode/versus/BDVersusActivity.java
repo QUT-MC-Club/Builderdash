@@ -283,7 +283,12 @@ public class BDVersusActivity extends BDGameActivity<BDVersusConfig> {
             var disp = this.gameMap.doubleZone.displays()[i];
             disp.setContent(GenericContent.builder().addBottom(REVEALING, 1, 7).build());
 
-            if (disp.getAttachment() == null) ChunkAttachment.of(disp, this.world, disp.getPos());
+            var currAtt = disp.getAttachment();
+            if (currAtt != null) {
+                currAtt.destroy();
+            }
+
+            ChunkAttachment.of(disp, this.world, disp.getPos());
         }
         anims.addLast(TickingAnimation.instant(w -> this.nextPhase()));
         this.animations.add(new TickingAnimation.Sequence(anims));

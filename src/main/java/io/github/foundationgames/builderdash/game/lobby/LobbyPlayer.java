@@ -9,6 +9,7 @@ public class LobbyPlayer {
     public final PlayerRef player;
     public LobbyGui gui;
     public boolean ready = false;
+    private int readyUseCooldown = 20;
 
     public LobbyPlayer(GameSpace space, BDLobbyActivity<?> lobby, PlayerRef player) {
         this.lobby = lobby;
@@ -20,7 +21,17 @@ public class LobbyPlayer {
         });
     }
 
+    public void tick() {
+        if (this.readyUseCooldown > 0) {
+            this.readyUseCooldown--;
+        }
+    }
+
     public void updateReady(boolean ready) {
+        if (this.readyUseCooldown > 0) {
+            return;
+        }
+
         this.ready = ready;
         this.lobby.checkCanStart();
     }

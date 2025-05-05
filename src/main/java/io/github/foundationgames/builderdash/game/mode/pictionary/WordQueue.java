@@ -17,7 +17,7 @@ public record WordQueue(WordList list, Deque<String[]> queue) {
     }
 
     public String[] pop() {
-        if (queue().size() == 0) {
+        if (queue().isEmpty()) {
             var words = new ArrayList<>(list.words());
             Collections.shuffle(words);
 
